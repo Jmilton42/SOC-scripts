@@ -1,0 +1,63 @@
+<group name="bruhlog,">
+	<rule id="100001" level="15">
+	  <if_sid>60009</if_sid>
+	  <field name="win.system.providerName">^Image\sLoad$</field>
+	  <description>Bruhlog: Unbacked Image Load</description>
+	</rule>
+	<rule id="100002" level="15">
+	  <if_sid>60009</if_sid>
+	  <field name="win.system.providerName">^Process\sStart$</field>
+	  <description>Bruhlog: Potential Malicious Process Start</description>
+	</rule>
+	<rule id="100003" level="15">
+	  <if_sid>60009</if_sid>
+	  <field name="win.system.providerName">^Thread\sStart$</field>
+	  <description>Bruhlog: Potentially Malicious Thread Start</description>
+	</rule>
+</group>
+<group name="syslog, snoopy">
+    <rule id="100004" level="3">
+        <decoded_as>snoopy</decoded_as>
+        <description>Snoopy: Command Executed</description>
+    </rule>
+    <rule id="100005" level="12">
+        <decoded_as>snoopy</decoded_as>
+        <field name="uid" negate="yes" type="PCRE2">[^\d]0\[^\d]|root</field>
+        <description>Snoopy: Unexpected User Ran Command</description>
+    </rule>
+    <rule id="100007" level="12">
+        <decoded_as>snoopy</decoded_as>
+        <field name="tty" negate="yes" type="PCRE2">.*\(none\).*</field>
+        <description>Command ran with a TTY.</description>
+    </rule>
+    <rule id="100008" level="15">
+        <decoded_as>snoopy</decoded_as>
+        <field name="filename" type="PCRE2">.*(sudo|su|curl|wget|fetch|useradd|adduser|userdel|crontab|chpasswd|passwd|service|systemctl|kill|modprobe|insmod|ufw|iptables|pfctl|chmod|chattrr|python|netcat|whoami|wall)</field>
+        <description>Suspicious command ran.</description>
+    </rule>
+</group>
+
+<group name="syscheck,">
+  <rule id="100300" level="7">
+    <if_sid>550</if_sid>
+    <field name="file">/tmp/yara/malware/</field>
+    <description>File modified in /tmp/yara/malware/ directory.</description>
+  </rule>
+  <rule id="100301" level="7">
+    <if_sid>554</if_sid>
+    <field name="file">/tmp/yara/malware/</field>
+    <description>File added to /tmp/yara/malware/ directory.</description>
+  </rule>
+</group>
+
+<group name="yara,">
+  <rule id="108000" level="0">
+    <decoded_as>yara_decoder</decoded_as>
+    <description>Yara grouping rule</description>
+  </rule>
+  <rule id="108001" level="12">
+    <if_sid>108000</if_sid>
+    <match>wazuh-yara: INFO - Scan result: </match>
+    <description>File "$(yara_scanned_file)" is a positive match. Yara rule: $(yara_rule)</description>
+  </rule>
+</group>

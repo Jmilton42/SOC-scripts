@@ -1,0 +1,43 @@
+<decoder name="snoopy">
+        <prematch>uid:\d:*\ssid:\d*\stty:\.*\scwd:\.*\sfilename:\.*</prematch>
+</decoder>
+
+<decoder name="snoopy_child">
+        <parent>snoopy</parent>
+        <regex type="PCRE2">tty:(\S+)</regex>
+        <order>tty</order>
+</decoder>
+
+<decoder name="snoopy_child">
+        <parent>snoopy</parent>
+        <regex type="PCRE2">uid:(\S+)</regex>
+        <order>uid</order>
+</decoder>
+
+<decoder name="snoopy_child">
+        <parent>snoopy</parent>
+        <regex type="PCRE2">filename:(\S+)\]</regex>
+        <order>filename</order>
+</decoder>
+
+<decoder name="snoopy_child">
+        <parent>snoopy</parent>
+        <regex type="PCRE2">cwd:(\S+)</regex>
+        <order>cwd</order>
+</decoder>
+
+<decoder name="snoopy_child">
+        <parent>snoopy</parent>
+        <regex type="PCRE2">\]:\s(.*)$</regex>
+        <order>cmd</order>
+</decoder>
+
+<decoder name="yara_decoder">
+  <prematch>wazuh-yara:</prematch>
+</decoder>
+
+<decoder name="yara_decoder1">
+  <parent>yara_decoder</parent>
+  <regex>wazuh-yara: (\S+) - Scan result: (\S+) (\S+)</regex>
+  <order>log_type, yara_rule, yara_scanned_file</order>
+</decoder>
