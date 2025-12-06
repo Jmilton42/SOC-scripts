@@ -142,8 +142,6 @@ suricata() {
 
   sed -i -e "s|^ *HOME_NET:.*|HOME_NET: \"${HOST_IP}\"|" "$CONF"
 
-  # Uncomment and set EXTERNAL_NET: "any"
-  sed -i -e "s|^ *# *EXTERNAL_NET:.*|EXTERNAL_NET: \"any\"|" "$CONF"
   sed -i -e "s|^ *EXTERNAL_NET:.*|EXTERNAL_NET: \"any\"|" "$CONF"
 
   # Add "*.rules" to rule-files
