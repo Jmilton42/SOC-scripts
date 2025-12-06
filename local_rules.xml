@@ -15,6 +15,7 @@
 	  <description>Bruhlog: Potentially Malicious Thread Start</description>
 	</rule>
 </group>
+
 <group name="syslog, snoopy">
     <rule id="100004" level="3">
         <decoded_as>snoopy</decoded_as>
@@ -32,7 +33,7 @@
     </rule>
     <rule id="100008" level="15">
         <decoded_as>snoopy</decoded_as>
-        <field name="filename" type="PCRE2">.*(sudo|su|curl|wget|fetch|useradd|adduser|userdel|crontab|chpasswd|passwd|service|systemctl|kill|modprobe|insmod|ufw|iptables|pfctl|chmod|chattrr|python|netcat|whoami|wall)</field>
+        <field name="filename" type="PCRE2">.*(sudo|su|curl|wget|fetch|useradd|adduser|userdel|crontab|chpasswd|passwd|service|systemctl|kill|modprobe|insmod|ufw|iptables|pfctl|chmod|chattr|python|netcat|whoami|wall)</field>
         <description>Suspicious command ran.</description>
     </rule>
 </group>

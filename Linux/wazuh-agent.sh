@@ -50,9 +50,10 @@ DPKG() {
     exit 1
   fi
 
-  add-apt-repository ppa:oisf/suricata-stable
-  apt-get update
+  add-apt-repository ppa:oisf/suricata-stable -y
+  apt-get update -y
   apt-get install -y suricata
+  echo ""
 
 }
 
@@ -117,7 +118,7 @@ is_agent_running() {
 suricata() {
 
   cd /tmp/ && curl -LO https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz || wget https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz || fetch https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz
-  tar -xvzf emerging.rules.tar.gz && mkdir /etc/suricata/rules && mv rules/* /etc/suricata/rules/
+  tar -xvzf emerging.rules.tar.gz && mkdir -p /etc/suricata/rules && mv rules/* /etc/suricata/rules/
   chmod 777 /etc/suricata/rules/*.rules
 
   set -e
@@ -130,7 +131,7 @@ suricata() {
     IFACE="eth0"
   fi
 
-  IP=$(ip -4 addr show "$IFACE" | awk '/inet / {print $2}; exit')
+  IP=$(ip -4 addr show "$IFACE" | awk '/inet / {print $2; exit}')
   HOST_IP=${IP%%/*}
 
   if [ ! -f "${CONF}.bak" ]; then
@@ -141,10 +142,37 @@ suricata() {
 
   sed -i -e "s|^ *HOME_NET:.*|HOME_NET: \"${HOST_IP}\"|" "$CONF"
 
+  # Uncomment and set EXTERNAL_NET: "any"
+  sed -i -e "s|^ *# *EXTERNAL_NET:.*|EXTERNAL_NET: \"any\"|" "$CONF"
+  sed -i -e "s|^ *EXTERNAL_NET:.*|EXTERNAL_NET: \"any\"|" "$CONF"
+
+  # Add "*.rules" to rule-files
+  if grep -q "^ *rule-files:" "$CONF"; then
+    # Check if "*.rules" already exists in rule-files
+    if ! grep -A 10 "^ *rule-files:" "$CONF" | grep -q "\"*.rules\""; then
+      # Add "*.rules" to the rule-files list
+      sed -i -e "/^ *rule-files:/a\  - \"*.rules\"" "$CONF"
+    fi
+  else
+    # If rule-files doesn't exist, add it after default-rule-path or HOME_NET
+    if grep -q "^ *default-rule-path:" "$CONF"; then
+      sed -i -e "/^ *default-rule-path:/a\\
+rule-files:\\
+  - \"*.rules\"" "$CONF"
+    else
+      sed -i -e "/^ *HOME_NET:/a\\
+EXTERNAL_NET: \"any\"\\
+rule-files:\\
+  - \"*.rules\"" "$CONF"
+    fi
+  fi
+
   sed -i -e "s|^ *- interface: .*|  - interface: ${IFACE}|" "$CONF"
 
   echo "[+] Updated $CONF:"
   echo "    HOME_NET: \"${HOST_IP}\""
+  echo "    EXTERNAL_NET: \"any\""
+  echo "    rule-files: \"*.rules\""
   echo "    af-packet -> interface: ${IFACE}"
 
   $sys daemon-reload 2>/dev/null
