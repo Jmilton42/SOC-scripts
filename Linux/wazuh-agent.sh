@@ -33,7 +33,7 @@ DPKG() {
   fi
 
   DOWNLOAD_URL="https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent"
-  package="wazuh-agent_4.14.0-1_${ARCH_PKG}.deb"
+  package="wazuh-agent_4.14.1-1_${ARCH_PKG}.deb"
 
   ( wget --no-check-certificate -O $package $DOWNLOAD_URL/$package || \
     curl -k -o $package $DOWNLOAD_URL/$package || \
@@ -68,7 +68,7 @@ RPM() {
   fi
 
   DOWNLOAD_URL="https://packages.wazuh.com/4.x/yum"
-  package="wazuh-agent-4.14.0-1.${ARCH_PKG}.rpm"
+  package="wazuh-agent-4.14.1-1.${ARCH_PKG}.rpm"
 
   ( wget -O $package $DOWNLOAD_URL/$package || \
     curl -o $package $DOWNLOAD_URL/$package || \
