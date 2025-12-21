@@ -116,8 +116,6 @@ is_agent_running() {
 }
 
 suricata() {
-  set -e
-
   # Download and extract rules
   cd /tmp/ && curl -LO https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz || wget https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz || fetch https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz
   tar -xvzf emerging.rules.tar.gz && mkdir -p /etc/suricata/rules && mv rules/* /etc/suricata/rules/ 2>/dev/null || true
@@ -235,25 +233,38 @@ rule-files:\\
   fi
 
   # Reload systemd and start service
+  echo "[*] Reloading systemd daemon..."
   $sys daemon-reload 2>/dev/null || true
+  
+  echo "[*] Enabling Suricata service..."
   $sys enable suricata 2>/dev/null || $sys suricata enable 2>/dev/null || true
 
   # Stop any existing instance before starting
+  echo "[*] Stopping any existing Suricata instances..."
   $sys stop suricata 2>/dev/null || $sys suricata stop 2>/dev/null || true
   sleep 2
 
   # Start the service
+  echo "[*] Starting Suricata service..."
   if $sys start suricata 2>/dev/null || $sys suricata start 2>/dev/null; then
-    echo "[+] Suricata service started successfully"
-    sleep 2
+    echo "[+] Suricata service start command executed"
+    sleep 3
+    echo "[*] Checking Suricata service status..."
     if $sys status suricata >/dev/null 2>&1 || $sys suricata status >/dev/null 2>&1; then
       echo "[+] Suricata is running"
     else
-      echo "WARNING: Suricata service may have failed to start. Check logs with: journalctl -u suricata -n 50"
+      echo "WARNING: Suricata service may have failed to start."
+      echo "Checking service status..."
+      $sys status suricata 2>&1 || $sys suricata status 2>&1 || true
+      echo "Check logs with: journalctl -u suricata -n 50"
     fi
   else
-    echo "WARNING: Failed to start Suricata service. Check logs with: journalctl -u suricata -n 50"
+    echo "ERROR: Failed to start Suricata service."
+    echo "Attempting to get error details..."
+    $sys status suricata 2>&1 || $sys suricata status 2>&1 || true
+    echo "Check logs with: journalctl -u suricata -n 50"
   fi
+  echo "[*] Suricata configuration complete"
 }
 
 
