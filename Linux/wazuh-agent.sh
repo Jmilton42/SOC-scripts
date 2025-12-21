@@ -118,153 +118,72 @@ is_agent_running() {
 suricata() {
   # Download and extract rules
   cd /tmp/ && curl -LO https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz || wget https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz || fetch https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz
-  tar -xvzf emerging.rules.tar.gz && mkdir -p /etc/suricata/rules && mv rules/* /etc/suricata/rules/ 2>/dev/null || true
-
-  # Set permissions on rules files if they exist
-  if [ -n "$(ls -A /etc/suricata/rules/*.rules 2>/dev/null)" ]; then
-    chmod 644 /etc/suricata/rules/*.rules
-  fi
+  tar -xvzf emerging.rules.tar.gz && sudo mkdir /etc/suricata/rules && sudo mv rules/*.rules /etc/suricata/rules/
+  chmod 777 /etc/suricata/rules/*.rules
 
   CONF="/etc/suricata/suricata.yaml"
 
-  # Backup original config
-  if [ ! -f "${CONF}.bak" ]; then
-    cp "$CONF" "${CONF}.bak"
-  fi
-
-  # Detect network interface - try multiple methods
   IFACE=$(ip route show default 2>/dev/null | awk '/default/ {print $5; exit}')
-  
-  # If no default route, try to find first non-loopback interface
+
   if [ -z "$IFACE" ]; then
-    IFACE=$(ip link show | grep -E "^[0-9]+:" | grep -v "lo:" | head -1 | awk -F': ' '{print $2}' | awk '{print $1}')
+    IFACE="eth0"
   fi
 
-  # If still no interface, try common names
-  if [ -z "$IFACE" ]; then
-    for test_iface in eth0 ens33 ens3 enp0s3 enp0s8; do
-      if ip link show "$test_iface" >/dev/null 2>&1; then
-        IFACE="$test_iface"
-        break
-      fi
-    done
-  fi
-
-  # Verify interface exists
-  if [ -z "$IFACE" ] || ! ip link show "$IFACE" >/dev/null 2>&1; then
-    echo "ERROR: Could not detect a valid network interface."
-    echo "Available interfaces:"
-    ip link show | grep -E "^[0-9]+:" | awk -F': ' '{print "  - " $2}'
-    echo "Please set SURICATA_INTERFACE environment variable or configure manually."
-    return 1
-  fi
-
-  IP=$(ip -4 addr show "$IFACE" 2>/dev/null | awk '/inet / {print $2; exit}')
+  IP=$(ip -4 addr show "$IFACE" | awk '/inet / {print $2}; exit')
   HOST_IP=${IP%%/*}
-
-  if [ -z "$HOST_IP" ]; then
-    echo "WARNING: Interface $IFACE has no IP address. Suricata may not work correctly."
-    HOST_IP="any"
-  fi
 
   echo "[*] Detected interface: $IFACE with IP: $HOST_IP"
 
   # Update HOME_NET
   sed -i -e "s|^ *HOME_NET:.*|HOME_NET: \"${HOST_IP}\"|" "$CONF"
 
-  # Uncomment and set EXTERNAL_NET: "any"
+  # Update EXTERNAL_NET
   sed -i -e "s|^ *# *EXTERNAL_NET:.*|EXTERNAL_NET: \"any\"|" "$CONF"
   sed -i -e "s|^ *EXTERNAL_NET:.*|EXTERNAL_NET: \"any\"|" "$CONF"
 
-  # Add "*.rules" to rule-files if not already present
+  # Update default-rule-path
+  sed -i -e "s|^ *default-rule-path:.*|default-rule-path: /etc/suricata/rules|" "$CONF"
+
+  # Update rule-files
   if grep -q "^ *rule-files:" "$CONF"; then
-    if ! grep -A 10 "^ *rule-files:" "$CONF" | grep -q "\"*.rules\""; then
-      sed -i -e "/^ *rule-files:/a\  - \"*.rules\"" "$CONF"
+    # If rule-files exists, check if "*.rules" is already there
+    if ! grep -A 5 "^ *rule-files:" "$CONF" | grep -q "\"*.rules\""; then
+      # Add "*.rules" after rule-files: line
+      sed -i -e "/^ *rule-files:/a\\
+  - \"*.rules\"" "$CONF"
     fi
   else
-    # If rule-files doesn't exist, add it after default-rule-path or HOME_NET
-    if grep -q "^ *default-rule-path:" "$CONF"; then
-      sed -i -e "/^ *default-rule-path:/a\\
+    # Add rule-files after default-rule-path
+    sed -i -e "/^ *default-rule-path:/a\\
 rule-files:\\
   - \"*.rules\"" "$CONF"
-    else
-      sed -i -e "/^ *HOME_NET:/a\\
-EXTERNAL_NET: \"any\"\\
-rule-files:\\
-  - \"*.rules\"" "$CONF"
-    fi
   fi
 
-  # Update interface in af-packet section only (not DPDK section)
-  in_afpacket=0
-  while IFS= read -r line || [ -n "$line" ]; do
-    if echo "$line" | grep -q "^af-packet:"; then
-      in_afpacket=1
-      echo "$line"
-    elif echo "$line" | grep -q "^[a-z]" && ! echo "$line" | grep -q "^  "; then
-      in_afpacket=0
-      echo "$line"
-    elif [ $in_afpacket -eq 1 ] && echo "$line" | grep -q "^  - interface:"; then
-      echo "  - interface: ${IFACE}"
-    else
-      echo "$line"
-    fi
-  done < "$CONF" > "${CONF}.tmp" && mv "${CONF}.tmp" "$CONF"
+  # Enable stats
+  if grep -q "^ *stats:" "$CONF"; then
+    # Update enabled in stats section
+    sed -i -e "/^ *stats:/,/^[a-z]/ {
+      /^ *enabled:/ s|^ *enabled:.*|  enabled: yes|
+    }" "$CONF"
+  else
+    # Add stats section if it doesn't exist
+    sed -i -e "/^# Global stats configuration/a\\
+stats:\\
+  enabled: yes" "$CONF"
+  fi
 
-  echo "[+] Updated $CONF:"
+  # Update af-packet interface - only modify lines with 2-space indent in af-packet section
+  sed -i -e "/^af-packet:/,/^[a-z]/ {
+    /^  - interface:/ s|^  - interface:.*|  - interface: ${IFACE}|
+  }" "$CONF"
+
+  echo "[+] Updated Suricata configuration:"
   echo "    HOME_NET: \"${HOST_IP}\""
   echo "    EXTERNAL_NET: \"any\""
+  echo "    default-rule-path: /etc/suricata/rules"
   echo "    rule-files: \"*.rules\""
-  echo "    af-packet -> interface: ${IFACE}"
-
-  # Validate configuration before starting
-  echo "[*] Validating Suricata configuration..."
-  if suricata -T -c "$CONF" >/dev/null 2>&1; then
-    echo "[+] Configuration is valid"
-  else
-    echo "ERROR: Suricata configuration validation failed. Restoring backup..."
-    if [ -f "${CONF}.bak" ]; then
-      cp "${CONF}.bak" "$CONF"
-      echo "Configuration restored from backup. Please fix manually."
-    fi
-    echo "Validation errors:"
-    suricata -T -c "$CONF" 2>&1 | head -20 || true
-    return 1
-  fi
-
-  # Reload systemd and start service
-  echo "[*] Reloading systemd daemon..."
-  $sys daemon-reload 2>/dev/null || true
-  
-  echo "[*] Enabling Suricata service..."
-  $sys enable suricata 2>/dev/null || $sys suricata enable 2>/dev/null || true
-
-  # Stop any existing instance before starting
-  echo "[*] Stopping any existing Suricata instances..."
-  $sys stop suricata 2>/dev/null || $sys suricata stop 2>/dev/null || true
-  sleep 2
-
-  # Start the service
-  echo "[*] Starting Suricata service..."
-  if $sys start suricata 2>/dev/null || $sys suricata start 2>/dev/null; then
-    echo "[+] Suricata service start command executed"
-    sleep 3
-    echo "[*] Checking Suricata service status..."
-    if $sys status suricata >/dev/null 2>&1 || $sys suricata status >/dev/null 2>&1; then
-      echo "[+] Suricata is running"
-    else
-      echo "WARNING: Suricata service may have failed to start."
-      echo "Checking service status..."
-      $sys status suricata 2>&1 || $sys suricata status 2>&1 || true
-      echo "Check logs with: journalctl -u suricata -n 50"
-    fi
-  else
-    echo "ERROR: Failed to start Suricata service."
-    echo "Attempting to get error details..."
-    $sys status suricata 2>&1 || $sys suricata status 2>&1 || true
-    echo "Check logs with: journalctl -u suricata -n 50"
-  fi
-  echo "[*] Suricata configuration complete"
+  echo "    stats enabled: yes"
+  echo "    af-packet interface: ${IFACE}"
 }
 
 
