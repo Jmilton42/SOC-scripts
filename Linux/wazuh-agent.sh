@@ -117,9 +117,9 @@ is_agent_running() {
 
 suricata() {
   # Download and extract rules
-  cd /tmp/ && curl -LO https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz || wget https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz || fetch https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz
-  tar -xvzf emerging.rules.tar.gz && sudo mkdir /etc/suricata/rules && sudo mv rules/*.rules /etc/suricata/rules/
-  chmod 777 /etc/suricata/rules/*.rules
+  cd /tmp/ && curl -LO https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz || wget https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz || fetch https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz 2>/dev/null || true
+  tar -xvzf emerging.rules.tar.gz && sudo mkdir /etc/suricata/rules && sudo mv rules/*.rules /etc/suricata/rules/ 2>/dev/null || true
+  chmod 777 /etc/suricata/rules/*.rules 2>/dev/null || true
 
   CONF="/etc/suricata/suricata.yaml"
 
@@ -185,6 +185,25 @@ stats:\\
   echo "    af-packet interface: ${IFACE}"
 }
 
+suricata_running() {
+    $sys restart suricata 2>/dev/null || $sys suricata restart 2>/dev/null
+  
+  if $sys status suricata >/dev/null 2>&1 || $sys suricata status >/dev/null 2>&1; then
+    echo "==================================================================="
+    echo "==================================================================="
+    echo "==================================================================="
+    echo "Suricata is running"
+  else
+    echo "==================================================================="
+    echo "==================================================================="
+    echo "==================================================================="
+    echo "Suricata is NOT running"
+  fi
+  echo "==================================================================="
+  echo "==================================================================="
+  echo "==================================================================="
+}
+
 
 if command -v dpkg >/dev/null ; then
   DPKG
@@ -199,3 +218,4 @@ fi
 suricata
 enable_and_start
 is_agent_running
+suricata_running
