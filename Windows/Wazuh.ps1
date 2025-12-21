@@ -16,7 +16,7 @@ if ($ArgumentsArray[1]) {
 
 $ErrorActionPreference = "Continue"
 
-$DownloadPath = "C:\Windows\System32\wazuh-agent-4.11.2-1.msi"
+$DownloadPath = "C:\Windows\System32\wazuh-agent-4.11.1-1.msi"
 
 if (Test-Path $DownloadPath) {
     $InstallCommand = "msiexec /i $DownloadPath /qn WAZUH_MANAGER=$Manager"
