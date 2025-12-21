@@ -50,9 +50,9 @@ DPKG() {
     exit 1
   fi
 
-  add-apt-repository ppa:oisf/suricata-stable -y
-  apt-get update -y
-  apt-get install -y suricata
+  add-apt-repository ppa:oisf/suricata-stable -y 2>/dev/null
+  apt-get update -y 2>/dev/null
+  apt-get install -y suricata 2>/dev/null
   echo ""
 
 }
@@ -85,8 +85,9 @@ RPM() {
     exit 1
   fi
 
-  yum install epel-release yum-plugin-copr -y
-  yum copr enable @oisf/suricata-7.0 -y
+  yum install epel-release yum-plugin-copr -y 2>/dev/null 
+  yum copr enable @oisf/suricata-7.0 -y 2>/dev/null 
+  yum update -y 2>/dev/null
   yum install suricata -y
 
 }
@@ -117,9 +118,9 @@ is_agent_running() {
 
 suricata() {
   # Download and extract rules
-  cd /tmp/ && curl -LO https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz || wget https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz || fetch https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz 2>/dev/null || true
-  tar -xvzf emerging.rules.tar.gz && sudo mkdir /etc/suricata/rules && sudo mv rules/*.rules /etc/suricata/rules/ 2>/dev/null || true
-  chmod 777 /etc/suricata/rules/*.rules 2>/dev/null || true
+  cd /tmp/ && curl -LO https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz 2>/dev/null || wget https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz 2>/dev/null || fetch https://rules.emergingthreats.net/open/suricata-6.0.8/emerging.rules.tar.gz 2>/dev/null
+  tar -xvzf emerging.rules.tar.gz 2>/dev/null && sudo mkdir /etc/suricata/rules 2>/dev/null  && sudo mv rules/*.rules /etc/suricata/rules/ 2>/dev/null 
+  chmod 777 /etc/suricata/rules/*.rules 2>/dev/null
 
   CONF="/etc/suricata/suricata.yaml"
 
