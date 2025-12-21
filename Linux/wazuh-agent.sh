@@ -129,17 +129,16 @@ suricata() {
     IFACE="eth0"
   fi
 
-  IP=$(ip -4 addr show "$IFACE" | awk '/inet / {print $2}; exit')
+  IP=$(ip -4 addr show "$IFACE" | awk '/inet / {print $2; exit}')
   HOST_IP=${IP%%/*}
 
   echo "[*] Detected interface: $IFACE with IP: $HOST_IP"
 
   # Update HOME_NET
-  sed -i -e "s|^ *HOME_NET:.*|HOME_NET: \"${HOST_IP}\"|" "$CONF"
+  sed -i -e "s|^ *HOME_NET:.*|    HOME_NET: \"${HOST_IP}\"|" "$CONF"
 
   # Update EXTERNAL_NET
-  sed -i -e "s|^ *# *EXTERNAL_NET:.*|EXTERNAL_NET: \"any\"|" "$CONF"
-  sed -i -e "s|^ *EXTERNAL_NET:.*|EXTERNAL_NET: \"any\"|" "$CONF"
+  sed -i -e "s|^ *# *EXTERNAL_NET:.*|    EXTERNAL_NET: \"any\"|" "$CONF"
 
   # Update default-rule-path
   sed -i -e "s|^ *default-rule-path:.*|default-rule-path: /etc/suricata/rules|" "$CONF"
