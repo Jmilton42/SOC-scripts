@@ -138,7 +138,7 @@ suricata() {
   sed -i -e "s|^ *HOME_NET:.*|    HOME_NET: \"${HOST_IP}\"|" "$CONF"
 
   # Update EXTERNAL_NET
-  sed -i -e "s|^ *# *EXTERNAL_NET:.*|    EXTERNAL_NET: \"any\"|" "$CONF"
+  sed -i -e "s|^ *EXTERNAL_NET:.*|    EXTERNAL_NET: \"any\"|" "$CONF"
 
   # Update default-rule-path
   sed -i -e "s|^ *default-rule-path:.*|default-rule-path: /etc/suricata/rules|" "$CONF"
