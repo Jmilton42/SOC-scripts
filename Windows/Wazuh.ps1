@@ -191,7 +191,66 @@ stats:
     Write-Host "Suricata configuration file not found at $confPath" -ForegroundColor Red
 }
 
-
+# 5. Download and Install Sysmon
+Write-Host "`nDownloading Sysmon..." -ForegroundColor Cyan
+try {
+    $sysmonZip = "$workDir\Sysmon.zip"
+    Invoke-WebRequest -Uri "https://download.sysinternals.com/files/Sysmon.zip" -OutFile $sysmonZip -UseBasicParsing
+    Write-Host "Extracting Sysmon..." -ForegroundColor Yellow
+    
+    # Extract Sysmon
+    Expand-Archive -Path $sysmonZip -DestinationPath "$workDir\Sysmon" -Force
+    
+    # Determine which Sysmon executable to use (64-bit or 32-bit)
+    $sysmonExe = "$workDir\Sysmon\Sysmon64.exe"
+    if (-not (Test-Path $sysmonExe)) {
+        $sysmonExe = "$workDir\Sysmon\Sysmon.exe"
+    }
+    
+    if (Test-Path $sysmonExe) {
+        Write-Host "Installing Sysmon..." -ForegroundColor Yellow
+        
+        # Find sysmon.xml - check script directory first (where it's located with Wazuh.ps1)
+        $sysmonXml = $null
+        $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+        if (-not $scriptDir) {
+            $scriptDir = $PSScriptRoot
+        }
+        $possiblePaths = @(
+            "$scriptDir\sysmon.xml",           # Same directory as script (primary location)
+            "$PSScriptRoot\sysmon.xml",        # Using $PSScriptRoot
+            ".\sysmon.xml",                    # Current directory
+            "$scriptDir\..\sysmon.xml",        # Parent directory (fallback)
+            "$PSScriptRoot\..\sysmon.xml",     # Parent of script root (fallback)
+            "..\sysmon.xml"                    # Parent of current (fallback)
+        )
+        
+        foreach ($path in $possiblePaths) {
+            if (Test-Path $path) {
+                $sysmonXml = (Resolve-Path $path).Path
+                break
+            }
+        }
+        
+        if ($sysmonXml) {
+            Write-Host "Found sysmon.xml at: $sysmonXml" -ForegroundColor Green
+            # Install Sysmon with the configuration file
+            $installArgs = "-accepteula -i `"$sysmonXml`""
+            Start-Process -FilePath $sysmonExe -ArgumentList $installArgs -Wait -NoNewWindow
+            Write-Host "Sysmon installed successfully with configuration." -ForegroundColor Green
+        } else {
+            Write-Host "Warning: sysmon.xml not found. Installing Sysmon without configuration." -ForegroundColor Yellow
+            Write-Host "Searched in: $($possiblePaths -join ', ')" -ForegroundColor Yellow
+            # Install Sysmon without config (user can configure later)
+            Start-Process -FilePath $sysmonExe -ArgumentList "-accepteula" -Wait -NoNewWindow
+            Write-Host "Sysmon installed (please configure manually)." -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "Error: Sysmon executable not found after extraction." -ForegroundColor Red
+    }
+} catch {
+    Write-Host "Error downloading/installing Sysmon: $_" -ForegroundColor Red
+}
 
 # 6. Start Services
 Write-Host "Starting services..." -ForegroundColor Yellow
@@ -209,4 +268,7 @@ try {
     Write-Host "Could not restart Wazuh service." -ForegroundColor Red
 }
 
-Write-Host "`nSuricata installation and configuration completed!" -ForegroundColor Cyan
+Write-Host "`nInstallation and configuration completed!" -ForegroundColor Cyan
+Write-Host "  - Wazuh Agent installed and configured" -ForegroundColor Green
+Write-Host "  - Suricata installed and configured" -ForegroundColor Green
+Write-Host "  - Sysmon installed and configured" -ForegroundColor Green
