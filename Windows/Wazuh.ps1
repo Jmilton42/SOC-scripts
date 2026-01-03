@@ -106,90 +106,90 @@ try {
 }
 
 # 4. Configure Suricata (Update HOME_NET and Interface)
-$confPath = "C:\Program Files\Suricata\suricata.yaml"
-if (Test-Path $confPath) {
-    Write-Host "Configuring Suricata..." -ForegroundColor Yellow
-    try {
-        # Auto-detect IPv4 address from Ethernet adapter
-        $ethernetAdapter = Get-NetAdapter | Where-Object { $_.Status -eq "Up" -and $_.InterfaceDescription -like "*Ethernet*" } | Select-Object -First 1
-        if (-not $ethernetAdapter) {
-            # Fallback to any up adapter
-            $ethernetAdapter = Get-NetAdapter | Where-Object { $_.Status -eq "Up" } | Select-Object -First 1
-        }
-        
-        if ($ethernetAdapter) {
-            $adapterName = $ethernetAdapter.Name
-            $ipAddress = (Get-NetIPAddress -InterfaceAlias $adapterName -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike "169.254.*" }).IPAddress
-            
-            if ($ipAddress) {
-                Write-Host "Detected Ethernet adapter: $adapterName" -ForegroundColor Green
-                Write-Host "Detected IPv4 address: $ipAddress" -ForegroundColor Green
-                
-                $content = Get-Content $confPath -Raw
-                
-                # Update HOME_NET with detected IP
-                $content = $content -replace '(HOME_NET:\s*")([^"]*)(")', "`$1$ipAddress`$3"
-                
-                # Update EXTERNAL_NET to "any"
-                $content = $content -replace '(EXTERNAL_NET:\s*")([^"]*)(")', "`$1any`$3"
-                
-                # Update default-rule-path (Windows uses forward slashes in YAML)
-                $content = $content -replace '(default-rule-path:\s*)([^\r\n]*)', "`$1/etc/suricata/rules"
-                
-                # Update rule-files to use emerging-all.rules
-                if ($content -match '(rule-files:\s*\r?\n)') {
-                    # Remove existing rule entries and add emerging-all.rules
-                    $content = $content -replace '(rule-files:\s*\r?\n)(\s*-\s*[^\r\n]*\r?\n)*', "rule-files:`r`n  - emerging-all.rules`r`n"
-                } else {
-                    $content = $content -replace '(default-rule-path:\s*/etc/suricata/rules)', "`$1`r`nrule-files:`r`n  - emerging-all.rules"
-                }
-                
-                # Update af-packet interface (Windows uses interface name like "Ethernet0")
-                # Find af-packet section and update interface
-                if ($content -match '(af-packet:\s*\r?\n\s*-\s*interface:\s*)([^\r\n]*)') {
-                    $content = $content -replace '(af-packet:\s*\r?\n\s*-\s*interface:\s*)([^\r\n]*)', "`$1$adapterName"
-                } else {
-                    # If af-packet section doesn't exist, add it
-                    $afPacketBlock = @"
-
-# Linux high speed capture support
-af-packet:
-  - interface: $adapterName
-"@
-                    $content = $content -replace '(# Linux high speed capture support)', $afPacketBlock
-                }
-                
-                # Enable stats
-                if ($content -match '(stats:\s*\r?\n\s*enabled:\s*)([^\r\n]*)') {
-                    $content = $content -replace '(stats:\s*\r?\n\s*enabled:\s*)([^\r\n]*)', "`$1yes"
-                } else {
-                    # Add stats section if it doesn't exist
-                    $statsBlock = @"
-
-# Global stats configuration
-stats:
-  enabled: yes
-"@
-                    $content = $content -replace '(# Global stats configuration)', $statsBlock
-                }
-                
-                Set-Content -Path $confPath -Value $content -NoNewline
-                Write-Host "Suricata configuration updated successfully!" -ForegroundColor Green
-                Write-Host "  HOME_NET: $ipAddress" -ForegroundColor Cyan
-                Write-Host "  EXTERNAL_NET: any" -ForegroundColor Cyan
-                Write-Host "  Interface: $adapterName" -ForegroundColor Cyan
-            } else {
-                Write-Host "Could not detect IPv4 address for adapter $adapterName" -ForegroundColor Red
-            }
-        } else {
-            Write-Host "Could not detect Ethernet adapter" -ForegroundColor Red
-        }
-    } catch {
-        Write-Host "Error configuring Suricata: $_" -ForegroundColor Red
-    }
-} else {
-    Write-Host "Suricata configuration file not found at $confPath" -ForegroundColor Red
-}
+#$confPath = "C:\Program Files\Suricata\suricata.yaml"
+#if (Test-Path $confPath) {
+#    Write-Host "Configuring Suricata..." -ForegroundColor Yellow
+#    try {
+#        # Auto-detect IPv4 address from Ethernet adapter
+#        $ethernetAdapter = Get-NetAdapter | Where-Object { $_.Status -eq "Up" -and $_.InterfaceDescription -like "*Ethernet*" } | Select-Object -First 1
+#        if (-not $ethernetAdapter) {
+#            # Fallback to any up adapter
+#            $ethernetAdapter = Get-NetAdapter | Where-Object { $_.Status -eq "Up" } | Select-Object -First 1
+#        }
+#        
+#        if ($ethernetAdapter) {
+#            $adapterName = $ethernetAdapter.Name
+#            $ipAddress = (Get-NetIPAddress -InterfaceAlias $adapterName -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike "169.254.*" }).IPAddress
+#            
+#            if ($ipAddress) {
+#                Write-Host "Detected Ethernet adapter: $adapterName" -ForegroundColor Green
+#                Write-Host "Detected IPv4 address: $ipAddress" -ForegroundColor Green
+#                
+#                $content = Get-Content $confPath -Raw
+#                
+#                # Update HOME_NET with detected IP
+#                $content = $content -replace '(HOME_NET:\s*")([^"]*)(")', "`$1$ipAddress`$3"
+#                
+#                # Update EXTERNAL_NET to "any"
+#                $content = $content -replace '(EXTERNAL_NET:\s*")([^"]*)(")', "`$1any`$3"
+#                
+#                # Update default-rule-path (Windows uses forward slashes in YAML)
+#                $content = $content -replace '(default-rule-path:\s*)([^\r\n]*)', "`$1/etc/suricata/rules"
+#                
+#                # Update rule-files to use emerging-all.rules
+#                if ($content -match '(rule-files:\s*\r?\n)') {
+#                    # Remove existing rule entries and add emerging-all.rules
+#                    $content = $content -replace '(rule-files:\s*\r?\n)(\s*-\s*[^\r\n]*\r?\n)*', "rule-files:`r`n  - emerging-all.rules`r`n"
+#                } else {
+#                    $content = $content -replace '(default-rule-path:\s*/etc/suricata/rules)', "`$1`r`nrule-files:`r`n  - emerging-all.rules"
+#                }
+#                
+#                # Update af-packet interface (Windows uses interface name like "Ethernet0")
+#                # Find af-packet section and update interface
+#                if ($content -match '(af-packet:\s*\r?\n\s*-\s*interface:\s*)([^\r\n]*)') {
+#                    $content = $content -replace '(af-packet:\s*\r?\n\s*-\s*interface:\s*)([^\r\n]*)', "`$1$adapterName"
+#                } else {
+#                    # If af-packet section doesn't exist, add it
+#                    $afPacketBlock = @"
+#
+## Linux high speed capture support
+#af-packet:
+#  - interface: $adapterName
+#"@
+#                    $content = $content -replace '(# Linux high speed capture support)', $afPacketBlock
+#                }
+#                
+#                # Enable stats
+#                if ($content -match '(stats:\s*\r?\n\s*enabled:\s*)([^\r\n]*)') {
+#                    $content = $content -replace '(stats:\s*\r?\n\s*enabled:\s*)([^\r\n]*)', "`$1yes"
+#                } else {
+#                    # Add stats section if it doesn't exist
+#                    $statsBlock = @"
+#
+## Global stats configuration
+#stats:
+#  enabled: yes
+#"@
+#                    $content = $content -replace '(# Global stats configuration)', $statsBlock
+#                }
+#                
+#                Set-Content -Path $confPath -Value $content -NoNewline
+#                Write-Host "Suricata configuration updated successfully!" -ForegroundColor Green
+#                Write-Host "  HOME_NET: $ipAddress" -ForegroundColor Cyan
+#                Write-Host "  EXTERNAL_NET: any" -ForegroundColor Cyan
+#                Write-Host "  Interface: $adapterName" -ForegroundColor Cyan
+#            } else {
+#                Write-Host "Could not detect IPv4 address for adapter $adapterName" -ForegroundColor Red
+#            }
+#        } else {
+#            Write-Host "Could not detect Ethernet adapter" -ForegroundColor Red
+#        }
+#    } catch {
+#        Write-Host "Error configuring Suricata: $_" -ForegroundColor Red
+#    }
+#} else {
+#    Write-Host "Suricata configuration file not found at $confPath" -ForegroundColor Red
+#}
 
 # 5. Download and Install Sysmon
 Write-Host "`nDownloading Sysmon..." -ForegroundColor Cyan
