@@ -47,64 +47,64 @@ try {
     Write-Host "Error downloading/installing Wazuh Agent: $_" -ForegroundColor Red
 }
 
-# Suricata Installation and Configuration
-Write-Host "`nStarting Suricata installation..." -ForegroundColor Cyan
-
-# 1. Setup Directories
-$workDir = "C:\temp\suricata_install"
-New-Item -ItemType Directory -Force -Path $workDir | Out-Null
-Set-Location $workDir
-
-# 2. Download and Install Npcap (Required for Suricata to see the network)
-Write-Host "Downloading Npcap..." -ForegroundColor Yellow
-try {
-    Invoke-WebRequest -Uri "https://nmap.org/npcap/dist/npcap-1.85.exe" -OutFile "npcap.exe" -UseBasicParsing
-    Write-Host "Installing Npcap (this may show a UI window)..." -ForegroundColor Yellow
-    # Npcap standard version shows a warning about silent install, but we'll proceed
-    # The installer will still run and can be completed
-    $npcapArgs = "/S /winpcap_mode=yes /npf_startup=yes /loopback_support=yes"
-    $process = Start-Process -FilePath ".\npcap.exe" -ArgumentList $npcapArgs -Wait -PassThru
-    Start-Sleep -Seconds 2
-    
-    # Check if Npcap was installed by checking for the service or driver
-    $npcapInstalled = $false
-    if (Test-Path "C:\Program Files\Npcap") {
-        $npcapInstalled = $true
-    } elseif (Get-Service -Name "npcap" -ErrorAction SilentlyContinue) {
-        $npcapInstalled = $true
-    }
-    
-    if ($npcapInstalled -or $process.ExitCode -eq 0) {
-        Write-Host "Npcap installed successfully." -ForegroundColor Green
-    } else {
-        Write-Host "Npcap installation may require manual completion. Please check if Npcap is installed." -ForegroundColor Yellow
-    }
-} catch {
-    Write-Host "Error downloading/installing Npcap: $_" -ForegroundColor Red
-    Write-Host "Please install Npcap manually from: https://nmap.org/npcap/" -ForegroundColor Yellow
-}
-
-# 3. Download and Install Suricata
-Write-Host "Downloading Suricata..." -ForegroundColor Yellow
-try {
-    Invoke-WebRequest -Uri "https://www.openinfosecfoundation.org/download/windows/Suricata-8.0.2-1-64bit.msi" -OutFile "suricata.msi" -UseBasicParsing
-    Start-Process -FilePath "msiexec.exe" -ArgumentList "/i suricata.msi /qn /norestart" -Wait -NoNewWindow
-    Write-Host "Suricata installed successfully." -ForegroundColor Green
-} catch {
-    Write-Host "Error downloading/installing Suricata: $_" -ForegroundColor Red
-}
-
-# 3.5. Download Emerging Threats Rules
-Write-Host "Downloading Emerging Threats rules..." -ForegroundColor Yellow
-try {
-    $rulesDir = "C:\Program Files\Suricata\rules"
-    New-Item -ItemType Directory -Force -Path $rulesDir | Out-Null
-    Invoke-WebRequest -Uri "https://rules.emergingthreats.net/open/suricata-7.0.3/emerging-all.rules" -OutFile "$rulesDir\emerging-all.rules" -UseBasicParsing
-    Write-Host "Emerging Threats rules downloaded successfully." -ForegroundColor Green
-} catch {
-    Write-Host "Error downloading rules: $_" -ForegroundColor Red
-}
-
+## Suricata Installation and Configuration
+#Write-Host "`nStarting Suricata installation..." -ForegroundColor Cyan
+#
+## 1. Setup Directories
+#$workDir = "C:\temp\suricata_install"
+#New-Item -ItemType Directory -Force -Path $workDir | Out-Null
+#Set-Location $workDir
+#
+## 2. Download and Install Npcap (Required for Suricata to see the network)
+#Write-Host "Downloading Npcap..." -ForegroundColor Yellow
+#try {
+#    Invoke-WebRequest -Uri "https://nmap.org/npcap/dist/npcap-1.85.exe" -OutFile "npcap.exe" -UseBasicParsing
+#    Write-Host "Installing Npcap (this may show a UI window)..." -ForegroundColor Yellow
+#    # Npcap standard version shows a warning about silent install, but we'll proceed
+#    # The installer will still run and can be completed
+#    $npcapArgs = "/S /winpcap_mode=yes /npf_startup=yes /loopback_support=yes"
+#    $process = Start-Process -FilePath ".\npcap.exe" -ArgumentList $npcapArgs -Wait -PassThru
+#    Start-Sleep -Seconds 2
+#    
+#    # Check if Npcap was installed by checking for the service or driver
+#    $npcapInstalled = $false
+#    if (Test-Path "C:\Program Files\Npcap") {
+#        $npcapInstalled = $true
+#    } elseif (Get-Service -Name "npcap" -ErrorAction SilentlyContinue) {
+#        $npcapInstalled = $true
+#    }
+#    
+#    if ($npcapInstalled -or $process.ExitCode -eq 0) {
+#        Write-Host "Npcap installed successfully." -ForegroundColor Green
+#    } else {
+#        Write-Host "Npcap installation may require manual completion. Please check if Npcap is installed." -ForegroundColor Yellow
+#    }
+#} catch {
+#    Write-Host "Error downloading/installing Npcap: $_" -ForegroundColor Red
+#    Write-Host "Please install Npcap manually from: https://nmap.org/npcap/" -ForegroundColor Yellow
+#}
+#
+## 3. Download and Install Suricata
+#Write-Host "Downloading Suricata..." -ForegroundColor Yellow
+#try {
+#    Invoke-WebRequest -Uri "https://www.openinfosecfoundation.org/download/windows/Suricata-8.0.2-1-64bit.msi" -OutFile "suricata.msi" -UseBasicParsing
+#    Start-Process -FilePath "msiexec.exe" -ArgumentList "/i suricata.msi /qn /norestart" -Wait -NoNewWindow
+#    Write-Host "Suricata installed successfully." -ForegroundColor Green
+#} catch {
+#    Write-Host "Error downloading/installing Suricata: $_" -ForegroundColor Red
+#}
+#
+## 3.5. Download Emerging Threats Rules
+#Write-Host "Downloading Emerging Threats rules..." -ForegroundColor Yellow
+#try {
+#    $rulesDir = "C:\Program Files\Suricata\rules"
+#    New-Item -ItemType Directory -Force -Path $rulesDir | Out-Null
+#    Invoke-WebRequest -Uri "https://rules.emergingthreats.net/open/suricata-7.0.3/emerging-all.rules" -OutFile "$rulesDir\emerging-all.rules" -UseBasicParsing
+#    Write-Host "Emerging Threats rules downloaded successfully." -ForegroundColor Green
+#} catch {
+#    Write-Host "Error downloading rules: $_" -ForegroundColor Red
+#}
+#
 # 4. Configure Suricata (Update HOME_NET and Interface)
 #$confPath = "C:\Program Files\Suricata\suricata.yaml"
 #if (Test-Path $confPath) {
