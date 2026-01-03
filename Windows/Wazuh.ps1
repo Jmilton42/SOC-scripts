@@ -55,15 +55,33 @@ $workDir = "C:\temp\suricata_install"
 New-Item -ItemType Directory -Force -Path $workDir | Out-Null
 Set-Location $workDir
 
-# 2. Download Npcap (Required for Suricata to see the network)
+# 2. Download and Install Npcap (Required for Suricata to see the network)
 Write-Host "Downloading Npcap..." -ForegroundColor Yellow
 try {
     Invoke-WebRequest -Uri "https://nmap.org/npcap/dist/npcap-1.85.exe" -OutFile "npcap.exe" -UseBasicParsing
-    # Silent Install for Npcap (WinPcap compatibility mode is required)
-    Start-Process -FilePath ".\npcap.exe" -ArgumentList "/S /winpcap_mode=yes" -Wait -NoNewWindow
-    Write-Host "Npcap installed successfully." -ForegroundColor Green
+    Write-Host "Installing Npcap (this may show a UI window)..." -ForegroundColor Yellow
+    # Npcap standard version shows a warning about silent install, but we'll proceed
+    # The installer will still run and can be completed
+    $npcapArgs = "/S /winpcap_mode=yes /npf_startup=yes /loopback_support=yes"
+    $process = Start-Process -FilePath ".\npcap.exe" -ArgumentList $npcapArgs -Wait -PassThru
+    Start-Sleep -Seconds 2
+    
+    # Check if Npcap was installed by checking for the service or driver
+    $npcapInstalled = $false
+    if (Test-Path "C:\Program Files\Npcap") {
+        $npcapInstalled = $true
+    } elseif (Get-Service -Name "npcap" -ErrorAction SilentlyContinue) {
+        $npcapInstalled = $true
+    }
+    
+    if ($npcapInstalled -or $process.ExitCode -eq 0) {
+        Write-Host "Npcap installed successfully." -ForegroundColor Green
+    } else {
+        Write-Host "Npcap installation may require manual completion. Please check if Npcap is installed." -ForegroundColor Yellow
+    }
 } catch {
     Write-Host "Error downloading/installing Npcap: $_" -ForegroundColor Red
+    Write-Host "Please install Npcap manually from: https://nmap.org/npcap/" -ForegroundColor Yellow
 }
 
 # 3. Download and Install Suricata
@@ -74,6 +92,17 @@ try {
     Write-Host "Suricata installed successfully." -ForegroundColor Green
 } catch {
     Write-Host "Error downloading/installing Suricata: $_" -ForegroundColor Red
+}
+
+# 3.5. Download Emerging Threats Rules
+Write-Host "Downloading Emerging Threats rules..." -ForegroundColor Yellow
+try {
+    $rulesDir = "C:\Program Files\Suricata\rules"
+    New-Item -ItemType Directory -Force -Path $rulesDir | Out-Null
+    Invoke-WebRequest -Uri "https://rules.emergingthreats.net/open/suricata-7.0.3/emerging-all.rules" -OutFile "$rulesDir\emerging-all.rules" -UseBasicParsing
+    Write-Host "Emerging Threats rules downloaded successfully." -ForegroundColor Green
+} catch {
+    Write-Host "Error downloading rules: $_" -ForegroundColor Red
 }
 
 # 4. Configure Suricata (Update HOME_NET and Interface)
@@ -107,13 +136,12 @@ if (Test-Path $confPath) {
                 # Update default-rule-path (Windows uses forward slashes in YAML)
                 $content = $content -replace '(default-rule-path:\s*)([^\r\n]*)', "`$1/etc/suricata/rules"
                 
-                # Update rule-files to include "*.rules" if not already present
-                if ($content -notmatch 'rule-files:\s*\r?\n\s*-\s*"\*\.rules"') {
-                    if ($content -match '(rule-files:\s*\r?\n)') {
-                        $content = $content -replace '(rule-files:\s*\r?\n)', "`$1  - `"*.rules`"`r`n"
-                    } else {
-                        $content = $content -replace '(default-rule-path:\s*/etc/suricata/rules)', "`$1`r`nrule-files:`r`n  - `"*.rules`""
-                    }
+                # Update rule-files to use emerging-all.rules
+                if ($content -match '(rule-files:\s*\r?\n)') {
+                    # Remove existing rule entries and add emerging-all.rules
+                    $content = $content -replace '(rule-files:\s*\r?\n)(\s*-\s*[^\r\n]*\r?\n)*', "rule-files:`r`n  - emerging-all.rules`r`n"
+                } else {
+                    $content = $content -replace '(default-rule-path:\s*/etc/suricata/rules)', "`$1`r`nrule-files:`r`n  - emerging-all.rules"
                 }
                 
                 # Update af-packet interface (Windows uses interface name like "Ethernet0")
