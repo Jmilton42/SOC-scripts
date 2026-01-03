@@ -1,3 +1,15 @@
+<!--
+  CCDC Sysmon Configuration
+  Combined configuration for Collegiate Cyber Defense Competition (CCDC)
+  Based on sysmon.xml (schema 4.90) with comprehensive MITRE ATT&CK coverage
+  Includes include-based filtering for high-signal security events
+  Optimized for competition environments with focus on threat detection
+  
+  Schema Version: 4.90 (Latest)
+  Last Updated: 2024
+  Includes: Process Creation, Network Connections, File Operations, Registry Changes, 
+            Image Loading, Process Access, WMI Events, and more
+-->
 <Sysmon schemaversion="4.90">
 <HashAlgorithms>*</HashAlgorithms>
 <!--  This now also determines the file names of the files preserved (String)  -->

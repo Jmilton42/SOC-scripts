@@ -86,7 +86,7 @@ RPM() {
   fi
 
   yum install epel-release yum-plugin-copr -y 2>/dev/null 
-  yum copr enable @oisf/suricata-7.0 -y 2>/dev/null 
+  yum copr enable @oisf/suricata-8.0 -y 2>/dev/null 
   yum update -y 2>/dev/null
   yum install suricata -y
 
