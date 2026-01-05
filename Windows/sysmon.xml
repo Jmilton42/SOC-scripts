@@ -62,6 +62,22 @@
 <OriginalFileName name="technique_id=T1218.004,technique_name=InstallUtil" condition="is">InstallUtil.exe</OriginalFileName>
 <CommandLine name="technique_id=T1218.004,technique_name=InstallUtil" condition="contains all">/logfile=;/LogToConsole=false;/U</CommandLine>
 </Rule>
+<OriginalFileName name="technique_id=T1218.002,technique_name=rundll32.exe" condition="contains">rundll32.exe</OriginalFileName>
+<OriginalFileName name="technique_id=T1033,technique_name=System Owner/User Discovery" condition="is">whoami.exe</OriginalFileName>
+<OriginalFileName name="technique_id=T1016,technique_name=System Network Configuration Discovery" condition="is">ipconfig.exe</OriginalFileName>
+<OriginalFileName name="technique_id=T1057,technique_name=Process Discovery" condition="is">tasklist.exe</OriginalFileName>
+<OriginalFileName name="technique_id=T1033,technique_name=System Owner/User Discovery" condition="contains any">systeminfo.exe;sysinfo.exe</OriginalFileName>
+<OriginalFileName name="technique_id=T1049,technique_name=System Network Connections Discovery" condition="is">netstat.exe</OriginalFileName>
+<OriginalFileName name="technique_id=T1057,technique_name=Process Discovery" condition="image">qprocess.exe</OriginalFileName>
+<OriginalFileName name="technique_id=T1016,technique_name=System Network Configuration Discovery" condition="is">nslookup.exe</OriginalFileName>
+<OriginalFileName name="technique_id=T1018,technique_name=Remote System Discovery" condition="contains any">net.exe;net1.exe</OriginalFileName>
+<OriginalFileName name="technique_id=T1033,technique_name=System Owner/User Discovery" condition="is">quser.exe</OriginalFileName>
+<OriginalFileName name="technique_id=T1057,technique_name=Process Discovery" condition="is">query.exe</OriginalFileName>
+<OriginalFileName name="technique_id=T1016,technique_name=System Network Configuration Discovery" condition="is">tracert.exe</OriginalFileName>
+<OriginalFileName name="technique_id=T1083,technique_name=File and Directory Discovery" condition="is">tree.com</OriginalFileName>
+<OriginalFileName name="technique_id=T1016,technique_name=System Network Configuration Discovery" condition="is">route.exe</OriginalFileName>
+<OriginalFileName name="technique_id=T1134,technique_name=Access Token Manipulation" condition="is">runas.exe</OriginalFileName>
+<OriginalFileName name="technique_id=T1112,technique_name=Modify Registry" condition="is">reg.exe</OriginalFileName>
 <OriginalFileName name="technique_id=T1546.008,technique_name=Windows Error Reporting" condition="contains">werfault.exe</OriginalFileName>
 <OriginalFileName name="technique_id=T1574.002,technique_name=DLL Side-Loading" condition="is">odbcconf.exe</OriginalFileName>
 <Rule name="technique_id=T1027.004,technique_name=Compile After Delivery" groupRelation="and">

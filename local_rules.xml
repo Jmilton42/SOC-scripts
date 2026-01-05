@@ -1,19 +1,42 @@
 <group name="bruhlog,">
-	<rule id="100001" level="15">
+	<rule id="1000670" level="15">
 	  <if_sid>60009</if_sid>
 	  <field name="win.system.providerName">^Image\sLoad$</field>
 	  <description>Bruhlog: Unbacked Image Load</description>
 	</rule>
-	<rule id="100002" level="15">
+	<rule id="100671" level="15">
 	  <if_sid>60009</if_sid>
 	  <field name="win.system.providerName">^Process\sStart$</field>
 	  <description>Bruhlog: Potential Malicious Process Start</description>
 	</rule>
-	<rule id="100003" level="15">
+	<rule id="100672" level="15">
 	  <if_sid>60009</if_sid>
 	  <field name="win.system.providerName">^Thread\sStart$</field>
 	  <description>Bruhlog: Potentially Malicious Thread Start</description>
 	</rule>
+</group>
+
+<group name="windows,sysmon">
+  <rule id="100200" level="12">
+    <if_sid>61610</if_sid>
+    <description>Possible process injection activity detected from "$(win.eventdata.sourceImage)" on "$(win.eventdata.targetImage)"</description>
+    <mitre>
+      <id>T1055.001</id>
+    </mitre>
+  </rule>
+ 
+  <rule id="100100" level="0">
+    <if_sid>100200</if_sid>
+    <field name="win.eventdata.sourceImage" type="pcre2">(C:\\\\Windows\\\\system32)|chrome.exe</field>
+    <description>Ignore Windows binaries and Chrome</description>
+  </rule>
+  <rule id="100201" level="12">
+    <if_sid>61600</if_sid>
+    <description>Process injection activity detected: "$(win.eventdata.Image)" has been tampered with</description>
+    <mitre>
+      <id>T1055.012</id>
+    </mitre>
+  </rule>
 </group>
 
 <group name="syslog, snoopy">
@@ -38,27 +61,85 @@
     </rule>
 </group>
 
-<group name="syscheck,">
-  <rule id="100300" level="7">
-    <if_sid>550</if_sid>
-    <field name="file">/tmp/yara/malware/</field>
-    <description>File modified in /tmp/yara/malware/ directory.</description>
+<group name="windows,firewall">
+  <rule id="100002" level="0">
+    <if_sid>18101</if_sid>
+    <id>2003</id>
+    <description>Firewall configuration changed</description>
   </rule>
-  <rule id="100301" level="7">
-    <if_sid>554</if_sid>
-    <field name="file">/tmp/yara/malware/</field>
-    <description>File added to /tmp/yara/malware/ directory.</description>
+  <rule id="100003" level="3">
+    <if_sid>100002</if_sid>
+    <regex>Type: Enable \.* Value: Yes</regex>
+    <description>Firewall enabled for private/domain profile</description>
+  </rule>
+  <rule id="100004" level="3">
+    <if_sid>100003</if_sid>
+    <regex>Public profile</regex>
+    <description>Firewall enabled for public profile</description>
+  </rule>
+  <rule id="100005" level="3">
+    <if_sid>100002</if_sid>
+    <regex>Type: Enable \.* Value: No</regex>
+    <description>Firewall disabled for private/domain profile</description>
+  </rule>
+  <rule id="100006" level="4">
+    <if_sid>100005</if_sid>
+    <regex>Public profile</regex>
+    <description>Firewall disabled for public profile</description>
+  </rule>
+  <rule id="100007" level="3">
+    <if_sid>18101</if_sid>
+    <id>2004</id>
+    <description>Firewall rule created</description>
+  </rule>
+  <rule id="100008" level="3">
+    <if_sid>18101</if_sid>
+    <id>2005</id>
+    <description>Firewall rule modified</description>
+  </rule>
+  <rule id="100009" level="3">
+    <if_sid>18101</if_sid>
+    <id>2006</id>
+    <description>Firewall rule deleted</description>
   </rule>
 </group>
 
-<group name="yara,">
-  <rule id="108000" level="0">
-    <decoded_as>yara_decoder</decoded_as>
-    <description>Yara grouping rule</description>
+<group name="security_event, windows,">
+
+  <!-- This rule detects when PsExec is launched remotely to perform lateral movement within the domain. The rule uses Sysmon events collected from the domain controller. -->
+  <rule id="110004" level="12">
+    <if_sid>61600</if_sid>
+    <field name="win.system.eventID" type="pcre2">17|18</field>
+    <field name="win.eventdata.PipeName" type="pcre2">\\PSEXESVC</field>
+    <options>no_full_log</options>
+    <description>PsExec service launched for possible lateral movement within the domain</description>
   </rule>
-  <rule id="108001" level="12">
-    <if_sid>108000</if_sid>
-    <match>wazuh-yara: INFO - Scan result: </match>
-    <description>File "$(yara_scanned_file)" is a positive match. Yara rule: $(yara_rule)</description>
+
+  <!-- This rule detects NTDS.dit file extraction using a sysmon event captured on the domain controller -->
+  <rule id="110006" level="12">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.commandLine" type="pcre2">NTDSUTIL</field>
+    <description>Possible NTDS.dit file extraction using ntdsutil.exe</description>
   </rule>
+
+  <!-- This rule detects Pass-the-ash (PtH) attacks using windows security event 4624 on the compromised endpoint -->
+  <rule id="110007" level="12">
+    <if_sid>60103</if_sid>
+    <field name="win.system.eventID">^4624$</field>
+    <field name="win.eventdata.LogonProcessName" type="pcre2">seclogo</field>
+    <field name="win.eventdata.LogonType" type="pcre2">9</field>
+    <field name="win.eventdata.AuthenticationPackageName" type="pcre2">Negotiate</field>
+    <field name="win.eventdata.LogonGuid" type="pcre2">{00000000-0000-0000-0000-000000000000}</field>
+    <options>no_full_log</options>
+    <description>Possible Pass the hash attack</description>
+  </rule>
+  
+  <!-- This rule detects credential dumping when the command sekurlsa::logonpasswords is run on mimikatz -->
+  <rule id="110008" level="12">
+    <if_sid>61612</if_sid>
+    <field name="win.eventdata.TargetImage" type="pcre2">(?i)\\\\system32\\\\lsass.exe</field>
+    <field name="win.eventdata.GrantedAccess" type="pcre2">(?i)0x1010</field>
+    <description>Possible credential dumping using mimikatz</description>
+  </rule>
+  
 </group>
