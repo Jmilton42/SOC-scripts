@@ -57,8 +57,7 @@ DPKG() {
 
   add-apt-repository ppa:oisf/suricata-stable -y 2>/dev/null
   apt-get update -y 2>/dev/null
-  apt-get install -y suricata 2>/dev/null
-  echo ""
+  apt-get install -y suricata auditd 2>/dev/null
 
 }
 
@@ -93,7 +92,7 @@ RPM() {
   yum install epel-release yum-plugin-copr -y 2>/dev/null 
   yum copr enable @oisf/suricata-8.0 -y 2>/dev/null 
   yum update -y 2>/dev/null
-  yum install suricata -y
+  yum install suricata auditd -y
 
 }
 
