@@ -143,3 +143,30 @@
   </rule>
   
 </group>
+
+<group name="syscollector,">
+  <!-- ports -->
+  <rule id="100310" level="3" >
+      <if_sid>221</if_sid>
+      <field name="type">dbsync_ports</field>
+      <description>Syscollector ports event.</description>
+  </rule>
+
+  <rule id="100311" level="3" >
+      <if_sid>100310</if_sid>
+      <field name="operation_type">INSERTED</field>
+      <description>The port: $(port.local_port), with local ip: $(port.local_ip) has been opened. Syscollector creation event detected.</description>
+  </rule>
+
+  <rule id="100312" level="3" >
+      <if_sid>100310</if_sid>
+      <field name="operation_type">MODIFIED</field>
+      <description>The port: $(port.local_port), with local ip: $(port.local_ip) has been modified. Syscollector modification event detected.</description>
+  </rule>
+
+  <rule id="100313" level="3" >
+      <if_sid>100310</if_sid>
+      <field name="operation_type">DELETED</field>
+      <description>The port: $(port.local_port), with local ip: $(port.local_ip) has been closed. Syscollector deletion event detected.</description>
+  </rule>
+</group>

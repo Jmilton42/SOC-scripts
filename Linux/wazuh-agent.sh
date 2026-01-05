@@ -10,6 +10,11 @@ if [ -z "$WAZUH_REGISTRATION_PASSWORD" ]; then
   WAZUH_REGISTRATION_PASSWORD=""
 fi
 
+if [ -z "/etc/snoopy.ini" ]; then
+  echo "ERROR: Snoopy must be installed before installing the Wazuh agent."
+  exit 1
+fi
+
 ARCH=$(uname -m)
 
 
