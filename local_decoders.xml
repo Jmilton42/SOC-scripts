@@ -32,12 +32,24 @@
         <order>cmd</order>
 </decoder>
 
-<decoder name="yara_decoder">
-  <prematch>wazuh-yara:</prematch>
+<decoder name="redshell">
+        <prematch>^REDTRAP</prematch>
 </decoder>
 
-<decoder name="yara_decoder1">
-  <parent>yara_decoder</parent>
-  <regex>wazuh-yara: (\S+) - Scan result: (\S+) (\S+)</regex>
-  <order>log_type, yara_rule, yara_scanned_file</order>
+<decoder name="redshell_child">
+        <parent>redshell</parent>
+        <regex>^REDTRAP\s(\S*)\s</regex>
+        <order>day</order>
+</decoder>
+
+<decoder name="redshell_child">
+        <parent>redshell</parent>
+        <regex>(\d\d:\d\d:\d\d\s\SM)</regex>
+        <order>time</order>
+</decoder>
+
+<decoder name="redshell_child">
+        <parent>redshell</parent>
+        <regex>--\s(\.+)</regex>
+        <order>cmd</order>
 </decoder>
